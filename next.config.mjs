@@ -4,5 +4,4 @@ const nextConfig = {
     domains: ["imagesecommerceefrst.blob.core.windows.net"],
   },
 };
-module.exports = nextConfig;
 export default nextConfig;
