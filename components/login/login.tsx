@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, User, X } from "lucide-react";
-import axios from "axios"; // Importar Axios
+import axios from "axios";
 
 interface LoginModalProps {
   isOpen: boolean;

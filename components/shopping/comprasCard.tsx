@@ -1,8 +1,8 @@
 import React from "react";
-
 import Image from "next/image";
 import { X } from "lucide-react";
 import { useCart } from "../../context/cardContext";
+import { CartItem } from "../../interface/types";
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface CartSidebarProps {
 }
 
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, removeFromCart, clearCart } = useCart();
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -29,14 +29,15 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               <X size={24} />
             </button>
           </div>
-          {cartItems.map((item: any) => (
+          {cartItems.map((item: CartItem) => (
             <div key={item.id} className="flex items-center mb-4">
               <Image
-                src={item.image}
+                src={item.image || "/placeholder-image.png"}
                 alt={item.name}
                 width={50}
                 height={50}
                 className="mr-4"
+                priority
               />
               <div className="flex-grow">
                 <h3 className="font-semibold">{item.name}</h3>
@@ -60,7 +61,13 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               Ir a mi carrito
             </button>
             <button className="w-full bg-yellow-500 text-white py-2 rounded">
-              Comprar ahora
+              <a href="/productos"> Comprar ahora</a>
+            </button>
+            <button
+              onClick={clearCart}
+              className="w-full bg-red-500 text-white py-2 rounded"
+            >
+              Vaciar carrito
             </button>
           </div>
         </div>

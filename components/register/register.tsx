@@ -20,9 +20,9 @@ export default function Register() {
       setProfileImage(e.target.files[0]);
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const userData = {
       name: firstName,
       lastName: lastName,
@@ -34,22 +34,22 @@ export default function Register() {
       dni: dni,
     };
 
-    const requestData = {
-      file: {},
-      user: JSON.stringify(userData),
-    };
+    const formData = new FormData();
+    formData.append("user", JSON.stringify(userData));
+    if (profileImage) {
+      formData.append("file", profileImage);
+    }
 
     try {
       const response = await axios.post(
         "https://ecommercespring-a9fthwekhac7f6b6.mexicocentral-01.azurewebsites.net/users/register/user",
-        requestData,
+        formData,
         {
           headers: {
             "Content-Type": "application/json",
           },
         }
       );
-
       console.log("Usuario registrado exitosamente:", response.data);
     } catch (error: any) {
       console.error(

@@ -47,6 +47,7 @@ export default function Header() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { cartCount } = useCart();
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -63,6 +64,13 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUserName = localStorage.getItem("username");
+    if (storedToken && storedUserName) {
+      setUserName(storedUserName);
+    }
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -72,7 +80,12 @@ export default function Header() {
   const handleProductClick = (productName: string) => {
     setSearchTerm(productName);
   };
-
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setUserName(null);
+    alert("Sesión cerrada.");
+  };
   return (
     <header className="bg-white shadow-md">
       <div className="container mx-auto px-4 py-2 flex items-center justify-between">
@@ -155,13 +168,22 @@ export default function Header() {
           )}
         </div>
         <div className="flex items-center space-x-4">
-          <button
-            className="flex items-center text-sm text-gray-600"
-            onClick={() => setIsLoginModalOpen(true)}
-          >
-            <User className="mr-1" size={18} />
-            Inicio sesión
-          </button>
+          {userName ? (
+            <>
+              <span className="text-sm text-gray-600">Hola, {userName}</span>
+              <button className="text-sm text-gray-600" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <button
+              className="flex items-center text-sm text-gray-600"
+              onClick={() => setIsLoginModalOpen(true)}
+            >
+              <User className="mr-1" size={18} />
+              Inicio sesión
+            </button>
+          )}
           <button
             className="flex items-center text-sm text-gray-600"
             onClick={() => setIsCartOpen(true)}

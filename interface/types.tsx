@@ -1,10 +1,16 @@
 export interface Product {
   id: number;
   name: string;
-  image: string;
+  description: string;
   price: number;
-  regularPrice: number;
-  isNew?: boolean;
+  stock: string;
+  image: string | null;
+  creationDate: string;
+  updateDate: string;
+  status: string;
+  warranty: string;
+  specs: string;
+  compatibility: string;
 }
 
 export interface CartItem extends Product {

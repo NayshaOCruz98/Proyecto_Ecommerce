@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { useCart } from "../../context/cardContext";
+import router from "next/router";
+import { CartItem } from "../../interface/types";
 
 interface Product {
   id: number;
@@ -14,6 +17,8 @@ interface Product {
 }
 
 const PayCart: React.FC = () => {
+  const { cartItems, updateQuantity, removeFromCart } = useCart();
+
   const [formData, setFormData] = useState({
     giftcard: "",
     cardNumber: "",
@@ -36,6 +41,13 @@ const PayCart: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  const subtotal = cartItems.reduce(
+    (sum, product) => sum + product.price * product.quantity,
+    0
+  );
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card");
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -286,32 +298,37 @@ const PayCart: React.FC = () => {
               </form>
             </div>
 
-            <div className="md:w-1/3">
+            <div className="md:w-2/7">
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="font-semibold">Resumen de la compra</h2>
-                  <a href="#" className="text-blue-500 text-sm">
+                  <a href="/principal" className="text-blue-500 text-sm">
                     Volver a carrito
                   </a>
                 </div>
-                <div className="flex items-center mb-4">
-                  <Image
-                    src="/ibuprofeno.png"
-                    alt="Nordic Children's DHA Xtra Liquido"
-                    width={50}
-                    height={50}
-                    className="mr-4"
-                  />
-                  <div>
-                    <p className="text-sm">ibuprofeno</p>
-                    <p className="font-semibold">S/ 130.00</p>
+                {cartItems.map((item: CartItem) => (
+                  <div key={item.id} className="flex items-center mb-4">
+                    <Image
+                      src={item.image || "/placeholder-image.png"}
+                      alt={item.name}
+                      width={80}
+                      height={80}
+                      className="object-cover"
+                      priority
+                    />
+                    <div>
+                      <p className="text-sm">{item.name}</p>
+                      <p className="font-semibold">
+                        {" "}
+                        s/ {item.price.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-
+                ))}
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>S/ 130.00</span>
+                    <span>S/ {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-green-500">
                     <span>Gastos del envío</span>
@@ -320,7 +337,7 @@ const PayCart: React.FC = () => {
                 </div>
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>S/ 130.00</span>
+                  <span>S/ {subtotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

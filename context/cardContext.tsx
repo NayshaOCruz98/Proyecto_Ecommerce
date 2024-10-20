@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 import { Product } from "../interface/types";
 
 interface CartItem extends Product {
@@ -10,6 +10,8 @@ interface CartContextType {
   addToCart: (product: Product) => void;
   removeFromCart: (productId: number) => void;
   cartCount: number;
+  clearCart: () => void;
+  updateQuantity: (productId: number, quantity: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -18,6 +20,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  useEffect(() => {
+    const savedCartItems = localStorage.getItem("cartItems");
+    if (savedCartItems) {
+      setCartItems(JSON.parse(savedCartItems));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const addToCart = (product: Product) => {
     setCartItems((prevItems) => {
@@ -38,12 +50,30 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       prevItems.filter((item) => item.id !== productId)
     );
   };
-
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem("cartItems");
+  };
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
-
+  const updateQuantity = (productId: number, quantity: number) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === productId
+          ? { ...item, quantity: Math.max(0, quantity) }
+          : item
+      )
+    );
+  };
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, cartCount }}
+      value={{
+        cartItems,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        cartCount,
+        updateQuantity,
+      }}
     >
       {children}
     </CartContext.Provider>

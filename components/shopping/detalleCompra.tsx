@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import { useRouter } from "next/router";
+import { useCart } from "../../context/cardContext";
+import { CartItem } from "../../interface/types";
 
 interface Product {
   id: number;
@@ -14,38 +17,18 @@ interface Product {
 }
 
 const ShoppingCart: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      name: "Ibuprofeno 800 mg",
-      package: "CAJA 100 UN",
-      price: 20.0,
-      isGeneric: true,
-      image: "/ibuprofeno.png",
-      quantity: 1,
-      brand: "blister",
-    },
-  ]);
+  const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [discountCode, setDiscountCode] = useState("");
+  const router = useRouter();
 
-  const updateQuantity = (id: number, newQuantity: number) => {
-    setProducts(
-      products.map((product) =>
-        product.id === id
-          ? { ...product, quantity: Math.max(0, newQuantity) }
-          : product
-      )
-    );
-  };
-
-  const removeProduct = (id: number) => {
-    setProducts(products.filter((product) => product.id !== id));
-  };
-
-  const subtotal = products.reduce(
+  const subtotal = cartItems.reduce(
     (sum, product) => sum + product.price * product.quantity,
     0
   );
+
+  const handleCheckout = () => {
+    router.push("/pay");
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -56,6 +39,7 @@ const ShoppingCart: React.FC = () => {
             alt="Cibertec"
             width={100}
             height={50}
+            priority
           />
           <div className="flex items-center space-x-4 text-sm">
             <span className="bg-blue-500 text-white px-3 py-1 rounded-full">
@@ -71,7 +55,7 @@ const ShoppingCart: React.FC = () => {
 
       <main className="flex flex-col md:flex-row gap-8">
         <div className="md:w-2/3">
-          <a href="#" className="flex items-center text-blue-500 mb-4">
+          <a href="/principal" className="flex items-center text-blue-500 mb-4">
             <ChevronLeft size={20} />
             <span>Continuar comprando</span>
           </a>
@@ -80,46 +64,43 @@ const ShoppingCart: React.FC = () => {
               <h2 className="font-semibold">Producto</h2>
               <h2 className="font-semibold">Precio</h2>
             </div>
-            {products.map((product) => (
-              <div key={product.id} className="flex items-center py-4 border-t">
+            {cartItems.map((item: CartItem) => (
+              <div key={item.id} className="flex items-center py-4 border-t">
                 <div className="flex items-center space-x-4 flex-grow">
                   <div className="flex flex-col items-center">
                     <button
-                      onClick={() =>
-                        updateQuantity(product.id, product.quantity + 1)
-                      }
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       className="text-gray-500"
                     >
                       +
                     </button>
-                    <span className="my-1">{product.quantity}</span>
+                    <span className="my-1">{item.quantity}</span>
                     <button
-                      onClick={() =>
-                        updateQuantity(product.id, product.quantity - 1)
-                      }
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="text-gray-500"
                     >
                       -
                     </button>
                   </div>
                   <Image
-                    src={product.image}
-                    alt={product.name}
+                    src={item.image || "/placeholder-image.png"}
+                    alt={item.name}
                     width={80}
                     height={80}
                     className="object-cover"
+                    priority
                   />
                   <div>
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p className="text-sm text-gray-500">{product.brand}</p>
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-sm text-gray-500">{item.specs}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <span className="font-semibold">
-                    s/ {product.price.toFixed(2)}
+                    s/ {item.price.toFixed(2)}
                   </span>
                   <button
-                    onClick={() => removeProduct(product.id)}
+                    onClick={() => removeFromCart(item.id)}
                     className="text-gray-500"
                   >
                     <Trash2 size={20} />
@@ -159,7 +140,10 @@ const ShoppingCart: React.FC = () => {
               <span>Total</span>
               <span>S/ {subtotal.toFixed(2)}</span>
             </div>
-            <button className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold">
+            <button
+              className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold"
+              onClick={handleCheckout}
+            >
               Finalizar compra
             </button>
           </div>
