@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, MapPin, User, ShoppingCart } from "lucide-react";
+import { Search, MapPin, User2, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "../../../context/cardContext";
 import CartSidebar from "../../shopping/comprasCard";
 import LoginModal from "../../login/login";
+import { signOut, User } from "firebase/auth";
+import { Product } from "../../../interface/types";
+import { auth } from "../../firebase/firebase";
 
 const suggestedProducts = [
   {
@@ -48,43 +51,70 @@ export default function Header() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { cartCount } = useCart();
   const [userName, setUserName] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const [user, setUser] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
-    const storedUserName = localStorage.getItem("username");
-    if (storedToken && storedUserName) {
-      setUserName(storedUserName);
+    if (storedToken) {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUser(currentUser);
+      }
     }
+
+    fetchProducts();
   }, []);
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(
+        "https://ecommercespring-a9fthwekhac7f6b6.mexicocentral-01.azurewebsites.net/product/list//"
+      );
+      const data = await response.json();
+      if (data.success) {
+        setProducts(data.data);
+      } else {
+        console.error("Error al obtener los productos:", data.message);
+      }
+    } catch (error) {
+      console.error("Error en la solicitud:", error);
+    }
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setShowSuggestions(e.target.value.length > 0);
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (value.length > 0) {
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+      setShowSuggestions(true);
+    } else {
+      setFilteredProducts([]);
+      setShowSuggestions(false);
+    }
   };
 
   const handleProductClick = (productName: string) => {
     setSearchTerm(productName);
+    setShowSuggestions(false);
   };
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    setUserName(null);
-    alert("Sesión cerrada.");
+    signOut(auth)
+      .then(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        setUser(null);
+        alert("Sesión cerrada.");
+      })
+      .catch((error: any) => {
+        console.error("Error al cerrar sesión:", error);
+      });
+  };
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
   };
   return (
     <header className="bg-white shadow-md">
@@ -131,14 +161,14 @@ export default function Header() {
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">
                   Productos sugeridos
                 </h3>
-                {suggestedProducts.map((product) => (
+                {filteredProducts.map((product) => (
                   <div
                     key={product.id}
                     className="flex items-center py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-100"
                     onClick={() => handleProductClick(product.name)}
                   >
                     <Image
-                      src={product.image}
+                      src={product.image || "/placeholder.png"}
                       alt={product.name}
                       width={40}
                       height={40}
@@ -146,13 +176,10 @@ export default function Header() {
                     />
                     <div className="flex-grow">
                       <p className="text-sm font-medium">{product.name}</p>
-                      <p className="text-xs text-gray-500">{product.package}</p>
+                      <p className="text-xs text-gray-500">
+                        {product.description}
+                      </p>
                       <div className="flex items-center mt-1">
-                        {product.isGeneric && (
-                          <span className="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2 py-0.5 rounded">
-                            Genérico
-                          </span>
-                        )}
                         <span className="text-sm font-semibold">
                           S/ {product.price.toFixed(2)}
                         </span>
@@ -160,17 +187,19 @@ export default function Header() {
                     </div>
                   </div>
                 ))}
-                <button className="w-full text-center text-sm text-purple-600 mt-2 hover:underline">
-                  Mostrar todos los resultados
-                </button>
+                {filteredProducts.length === 0 && (
+                  <p className="text-sm text-gray-500">
+                    No se encontraron productos
+                  </p>
+                )}
               </div>
             </div>
           )}
         </div>
         <div className="flex items-center space-x-4">
-          {userName ? (
+          {user ? (
             <>
-              <span className="text-sm text-gray-600">Hola, {userName}</span>
+              <span className="text-sm text-gray-600">Hola,{user.email}</span>
               <button className="text-sm text-gray-600" onClick={handleLogout}>
                 Cerrar sesión
               </button>
@@ -180,7 +209,7 @@ export default function Header() {
               className="flex items-center text-sm text-gray-600"
               onClick={() => setIsLoginModalOpen(true)}
             >
-              <User className="mr-1" size={18} />
+              <User2 className="mr-1" size={18} />
               Inicio sesión
             </button>
           )}
@@ -199,6 +228,7 @@ export default function Header() {
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
     </header>
   );

@@ -57,11 +57,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
   const updateQuantity = (productId: number, quantity: number) => {
     setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId
-          ? { ...item, quantity: Math.max(0, quantity) }
-          : item
-      )
+      prevItems
+        .map((item) =>
+          item.id === productId
+            ? { ...item, quantity: Math.max(0, quantity) }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
     );
   };
   return (

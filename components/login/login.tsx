@@ -1,13 +1,21 @@
 import React, { useState } from "react";
-import { Eye, EyeOff, User, X } from "lucide-react";
+import { Eye, EyeOff, X, User2 } from "lucide-react";
 import axios from "axios";
+import { signInWithEmailAndPassword, User } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase/firebase";
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess: (user: User) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,32 +29,35 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setErrorMessage("");
 
     try {
-      const response = await axios.post(
-        "https://ecommercespring-a9fthwekhac7f6b6.mexicocentral-01.azurewebsites.net/users/login/user",
-        {
-          username: email,
-          password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
       );
+      const user = userCredential.user;
 
-      const data = response.data;
+      localStorage.setItem("token", await user.getIdToken());
+      localStorage.setItem("username", user.displayName || user.email || "");
 
-      if (response.status === 200) {
-        localStorage.setItem("token", data.token);
-        alert("Login successful");
-        onClose();
-      } else {
-        setErrorMessage(data.message || "Error al iniciar sesión");
-      }
+      onLoginSuccess(user);
+      onClose();
     } catch (error) {
       setErrorMessage("Ocurrió un error. Inténtalo de nuevo.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      localStorage.setItem("token", await user.getIdToken());
+      localStorage.setItem("username", user.displayName || user.email || "");
+      onLoginSuccess(user);
+      onClose();
+    } catch (error) {
+      setErrorMessage("Error al iniciar sesión con Google");
     }
   };
 
@@ -58,7 +69,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-gray-200 rounded-full mr-2">
-              <User className="mt-2 ml-1 mb-1" size={20} />
+              <User2 className="mt-2 ml-1 mb-1" size={20} />
             </div>
             <h2 className="text-xl font-semibold">Iniciar sesión</h2>
           </div>
@@ -128,7 +139,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <img src="/facebook.png" alt="Facebook" className="w-6 h-6 mr-2" />
             Ingresa con Facebook
           </button>
-          <button className="w-full border border-gray-300 p-2 rounded mb-2 flex items-center justify-center">
+          <button
+            className="w-full border border-gray-300 p-2 rounded mb-2 flex items-center justify-center"
+            onClick={handleGoogleLogin}
+          >
             <img src="/google.jpg" alt="Google" className="w-6 h-6 mr-2" />
             Ingresa con Google
           </button>

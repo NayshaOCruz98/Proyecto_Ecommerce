@@ -5,28 +5,18 @@ import { useRouter } from "next/router";
 import { useCart } from "../../context/cardContext";
 import { CartItem } from "../../interface/types";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-  package: string;
-  isGeneric: boolean;
-  brand: string;
-}
-
 const ShoppingCart: React.FC = () => {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [discountCode, setDiscountCode] = useState("");
   const router = useRouter();
-
+  const { clearCart } = useCart();
   const subtotal = cartItems.reduce(
     (sum, product) => sum + product.price * product.quantity,
     0
   );
 
   const handleCheckout = () => {
+    clearCart();
     router.push("/pay");
   };
 
